@@ -36,7 +36,7 @@ public abstract class PreviewScalingStrategy {
         Log.i(TAG, "Viewfinder size: " + desired);
         Log.i(TAG, "Preview in order of preference: " + ordered);
 
-        return ordered.get(1);
+        return ordered.get(0);
     }
 
     /**
