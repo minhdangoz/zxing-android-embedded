@@ -17,17 +17,23 @@
 package com.journeyapps.barcodescanner.camera;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.os.Build;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
+import android.widget.Toast;
 
 import com.google.zxing.client.android.AmbientLightManager;
 import com.google.zxing.client.android.camera.open.OpenCameraInterface;
 import com.journeyapps.barcodescanner.Size;
 import com.journeyapps.barcodescanner.SourceData;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -90,6 +96,7 @@ public final class CameraManager {
             this.callback = callback;
         }
 
+
         @Override
         public void onPreviewFrame(byte[] data, Camera camera) {
             Size cameraResolution = resolution;
@@ -106,6 +113,27 @@ public final class CameraManager {
                         source.setPreviewMirrored(true);
                     }
                     callback.onPreview(source);
+
+                    // TODO:
+
+                    // 30 fps per second > analyze internal 1 second
+                    if (index % 10 == 0) {
+                        // start analyze image
+//                        Camera.Parameters parameters = camera.getParameters();
+//                        int width = parameters.getPreviewSize().width;
+//                        int height = parameters.getPreviewSize().height;
+
+//                        YuvImage yuv = new YuvImage(data, parameters.getPreviewFormat(), width, height, null);
+//
+//                        ByteArrayOutputStream out = new ByteArrayOutputStream();
+//                        yuv.compressToJpeg(new android.graphics.Rect(0, 0, width, height), 50, out);
+
+//                        byte[] bytes = out.toByteArray();
+                        final Bitmap bitmap = source.getBitmap();
+
+                        handleAutomaticTorch(bitmap);
+                    }
+                    index = index + 1;
                 } catch (RuntimeException e) {
                     // Could be:
                     // java.lang.RuntimeException: getParameters failed (empty parameters)
@@ -121,6 +149,76 @@ public final class CameraManager {
                 }
             }
         }
+    }
+
+
+
+    double threshold = 48;
+
+    public double calculateLuminance(Bitmap bitmap, int width, int height) {
+
+        Log.i(TAG, "--> calculateLuminance");
+
+        double totalLuminance = 0.0;
+
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+
+                int pixel = bitmap.getPixel(x, y);
+                double luminance = calculateLuminanceFromColor(pixel);
+                totalLuminance += luminance;
+            }
+        }
+
+        // Calculate average luminance
+        return totalLuminance / (width * height);
+
+    }
+
+    private double calculateLuminanceFromColor(int color) {
+        int red = Color.red(color);
+        int green = Color.green(color);
+        int blue = Color.blue(color);
+
+        // ITU-R BT.709 formula for luminance
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+    }
+
+    int index = 0;
+    boolean lastTorch = false;
+
+    private void handleAutomaticTorch(Bitmap bitmap) {
+        Log.i(TAG, "--> handleAutomaticTorch");
+        // TODO
+//        byte[] bytes = new byte[data.getPlanes()[0].getBuffer().remaining()];
+//        image.getPlanes()[0].getBuffer().get(bytes);
+//        int total = 0;
+//        for (byte value : bytes) {
+//            total += value & 0xFF;
+//        }
+//        if (bytes.length != 0) {
+//            final int luminance = total / bytes.length;
+//            // luminance is the value you need.
+//        }
+//        image.close();
+
+        double luminance = calculateLuminance(bitmap, bitmap.getWidth(), bitmap.getHeight());
+
+        Log.i(TAG, "--> handleAutomaticTorch: luminance = " + luminance);
+
+        Toast.makeText(context, "Luminance = " + Math.round(luminance), Toast.LENGTH_SHORT).show();
+
+        // if already turn on torch > do nothing
+        // keep torch on until finish scanning
+        if(lastTorch){
+            return;
+        }
+        if(luminance < threshold){
+            lastTorch = true;
+            setTorch(true);
+        }
+
+
     }
 
     /**
@@ -301,6 +399,8 @@ public final class CameraManager {
             // FIXME - can/should we do this for other devices as well?
             CameraConfigurationUtils.setBestPreviewFPS(parameters);
         }
+
+        CameraConfigurationUtils.setBestPreviewFPS(parameters);
 
         Log.i(TAG, "Final camera parameters: " + parameters.flatten());
 

@@ -1,54 +1,82 @@
 apply plugin: 'com.android.application'
 
+
+Properties keystoreProperties = new Properties()
+def keystorePropertiesFile = new File('keystore.properties')
+
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+} else{
+    println "--> keystore not exists"
+}
+
 android {
     compileSdkVersion project.androidTargetSdk
 
     defaultConfig {
+        applicationId "com.mobilestartools.scannerdemo"
         multiDexEnabled true
         minSdkVersion 19
         targetSdkVersion project.androidTargetSdk
-        versionCode 411
-        versionName "4.1.1"
+        versionCode 1
+        versionName "1.0.1"
     }
 
-    def validConfig
-    def keystoreFile
-    def keystorePassword
-    def keystoreAlias
 
-    try {
-        Properties properties = new Properties()
-        properties.load(project.rootProject.file('local.properties').newDataInputStream())
-        keystoreFile = properties.getProperty('keystore.file')
-        keystorePassword = properties.getProperty('keystore.password')
-        keystoreAlias = properties.getProperty('keystore.alias')
-        validConfig = keystoreFile != null && keystorePassword != null && keystoreAlias != null
-    } catch (error) {
-        validConfig = false
-    }
 
-    if (validConfig) {
-        System.out.println("Release signing configured with " + keystoreFile)
-        signingConfigs {
-            release {
-                storeFile project.rootProject.file(keystoreFile)
-                storePassword keystorePassword
-                keyAlias keystoreAlias
-                keyPassword keystorePassword
+    applicationVariants.all { variant ->
+        if (variant.getBuildType().isMinifyEnabled()) {
+            variant.assemble.doLast {
+                copy {
+                    from variant.mappingFile
+                    into "${projectDir}/release"
+                    rename { String fileName ->
+                        "mapping-${versionName}.txt"
+                    }
+                }
+
+                variant.outputs.each { output->
+                    def apkProcess = output.getOutputFile();
+                    copy {
+                        from "$apkProcess"
+                        into "${projectDir}/release"
+                        // rename ("$apkProcess.name", "$apkProcessNewName")
+                    }
+                }
             }
         }
-    } else {
-        System.out.println("Specify keystore.file, keystore.alias and keystore.password in local.properties to enable release signing.")
+
+        if (variant.getBuildType().name == "release"){
+            variant.outputs.all { output ->
+                def apkName = "Star-Scanner-" + android.defaultConfig.versionName +"-release.apk"
+                outputFileName = apkName
+            }
+        }
+
     }
+
+
+    signingConfigs {
+        if (keystorePropertiesFile.exists()) {
+            register("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+            }
+        }
+        config
+    }
+
 
     buildTypes {
         release {
-            if (validConfig) {
-                signingConfig signingConfigs.release
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
             }
-
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 

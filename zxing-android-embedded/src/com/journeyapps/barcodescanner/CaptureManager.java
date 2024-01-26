@@ -17,6 +17,7 @@ import android.view.Display;
 import android.view.Surface;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -73,9 +74,21 @@ public class CaptureManager {
 
     private boolean finishWhenClosed = false;
 
+    private String lastText = "";
+
     private BarcodeCallback callback = new BarcodeCallback() {
         @Override
         public void barcodeResult(final BarcodeResult result) {
+
+            if(result.getText() == null || result.getText().equals(lastText)) {
+                // Prevent duplicate scans
+                return;
+            }
+
+            lastText = result.getText();
+
+            Toast.makeText(activity, lastText , Toast.LENGTH_SHORT).show();
+
             barcodeView.pause();
             beepManager.playBeepSoundAndVibrate();
 
@@ -370,7 +383,7 @@ public class CaptureManager {
     }
 
     private void finish() {
-        activity.finish();
+         activity.finish();
     }
 
     protected void closeAndFinish() {
@@ -401,6 +414,7 @@ public class CaptureManager {
         Intent intent = resultIntent(rawResult, getBarcodeImagePath(rawResult));
         activity.setResult(Activity.RESULT_OK, intent);
         closeAndFinish();
+
     }
 
     protected void displayFrameworkBugMessageAndExit(String message) {

@@ -11,11 +11,7 @@
             android:name=".MainActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity android:name=".ContinuousCaptureActivity"></activity>
         <activity
@@ -36,7 +32,13 @@
             android:screenOrientation="fullSensor"
             android:stateNotNeeded="true"
             android:theme="@style/zxing_CaptureTheme"
-            android:windowSoftInputMode="stateAlwaysHidden"></activity>
+            android:windowSoftInputMode="stateAlwaysHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".SmallCaptureActivity"
             android:screenOrientation="fullSensor"
@@ -45,8 +47,8 @@
             android:windowSoftInputMode="stateAlwaysHidden"></activity>
         <activity
             android:name=".TabbedScanning"
-            android:theme="@style/Theme.AppCompat"
-            android:label="@string/title_activity_tabbed_scanning"></activity>
+            android:label="@string/title_activity_tabbed_scanning"
+            android:theme="@style/Theme.AppCompat"></activity>
     </application>
 
 </manifest>

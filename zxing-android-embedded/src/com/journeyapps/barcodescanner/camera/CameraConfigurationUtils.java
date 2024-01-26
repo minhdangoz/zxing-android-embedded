@@ -44,8 +44,8 @@ public final class CameraConfigurationUtils {
 
     private static final float MAX_EXPOSURE_COMPENSATION = 1.5f;
     private static final float MIN_EXPOSURE_COMPENSATION = 0.0f;
-    private static final int MIN_FPS = 10;
-    private static final int MAX_FPS = 20;
+    private static final int MIN_FPS = 20;
+    private static final int MAX_FPS = 30;
     private static final int AREA_PER_1000 = 400;
 
     private CameraConfigurationUtils() {
